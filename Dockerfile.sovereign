@@ -1,0 +1,34 @@
+FROM kasmweb/core-ubuntu-jammy:1.15.0
+USER root
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV ZED_RELEASE_CHANNEL=stable
+
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    libvulkan1 \
+    libasound2 \
+    libx11-xcb1 \
+    libxcb-dri3-0 \
+    libgbm1 \
+    libxshmfence1 \
+    libnss3 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libgtk-3-0 \
+    binutils \
+    unzip
+
+RUN curl -fL https://zed.dev/install.sh | sh
+
+RUN mkdir -p /opt/antigravity && cd /opt/antigravity \
+    && curl -fsSL https://code-server.dev/install.sh | sh
+
+# Creating a dummy directory for internal_configs since it's not present in the workspace
+RUN mkdir -p /home/kasm-user/.config/
+RUN chown -R 1000:1000 /home/kasm-user/
+
+USER 1000

@@ -1,0 +1,12 @@
+{
+    "name": "Zed-Antigravity-Hajjaj",
+    "image": "zed-antigravity:latest",
+    "cores": 4,
+    "memory": 16384,
+    "gpu_count": 0,
+    "environment": {
+        "LAUNCH_URL": "http://localhost:8080"
+    },
+    "categories": ["Development"],
+    "description": "The Ultimate Cloud IDE for Mr. Hajjaj"
+}
