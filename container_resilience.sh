@@ -1,7 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-LABEL_SELECTOR="${LABEL_SELECTOR:-zad.resilience=true}"
+LABEL_KEY="${LABEL_KEY:-zad.resilience}"
+LABEL_VALUE="${LABEL_VALUE:-true}"
+MANAGE_ALL_CONTAINERS="${MANAGE_ALL_CONTAINERS:-false}"
 CPU_THRESHOLD="${CPU_THRESHOLD:-80}"
 MAX_REPLICAS="${MAX_REPLICAS:-3}"
 CHECK_INTERVAL="${CHECK_INTERVAL:-30}"
@@ -14,6 +16,11 @@ Commands:
   monitor                 Auto-heal unhealthy/exited containers + simple load autoscaling.
   migrate <container>     Launch temporary replacement during maintenance/outage.
   list                    List managed containers.
+
+Environment:
+  LABEL_KEY               Label key used to mark managed containers (default: zad.resilience)
+  LABEL_VALUE             Label value used to mark managed containers (default: true)
+  MANAGE_ALL_CONTAINERS   true/false. If true, ignore labels and manage all containers.
 USAGE
 }
 
@@ -24,8 +31,16 @@ require_docker() {
   }
 }
 
+label_filter() {
+  printf "label=%s=%s" "$LABEL_KEY" "$LABEL_VALUE"
+}
+
 managed_containers() {
-  docker ps -a --filter "label=$LABEL_SELECTOR" --format '{{.Names}}'
+  if [ "$MANAGE_ALL_CONTAINERS" = "true" ]; then
+    docker ps -a --format '{{.Names}}'
+  else
+    docker ps -a --filter "$(label_filter)" --format '{{.Names}}'
+  fi
 }
 
 container_cpu() {

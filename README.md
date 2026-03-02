@@ -31,6 +31,8 @@ REPLICAS=2 ./run_local_zad.sh
 - `PORT` (الافتراضي: `6901`)
 - `REPLICAS` (الافتراضي: `1`)
 - `DOCKERFILE` (الافتراضي: `Dockerfile.sovereign`)
+- `RESILIENCE_LABEL_KEY` (الافتراضي: `zad.resilience`)
+- `RESILIENCE_LABEL_VALUE` (الافتراضي: `true`)
 
 ## 2) تفعيل المراقبة والشفاء الذاتي لكل الحاويات
 
@@ -38,12 +40,14 @@ REPLICAS=2 ./run_local_zad.sh
 ./container_resilience.sh monitor
 ```
 
-- يراقب الحاويات التي تحمل label: `zad.resilience=true`.
+- يراقب الحاويات التي تحمل label: `zad.resilience=true` (أو كل الحاويات عند `MANAGE_ALL_CONTAINERS=true`).
 - إذا كانت الحاوية `exited` أو `unhealthy` يتم إعادة تشغيلها تلقائياً.
 - عند ارتفاع استهلاك CPU عن الحد (`CPU_THRESHOLD`) يمكن تشغيل replica إضافي حتى `MAX_REPLICAS`.
 
 متغيرات تخص المراقبة:
-- `LABEL_SELECTOR` (الافتراضي: `zad.resilience=true`)
+- `LABEL_KEY` (الافتراضي: `zad.resilience`)
+- `LABEL_VALUE` (الافتراضي: `true`)
+- `MANAGE_ALL_CONTAINERS` (الافتراضي: `false`) لتفعيل الدعم على كل الحاويات
 - `CPU_THRESHOLD` (الافتراضي: `80`)
 - `MAX_REPLICAS` (الافتراضي: `3`)
 - `CHECK_INTERVAL` (الافتراضي: `30` ثانية)
