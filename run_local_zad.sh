@@ -6,8 +6,7 @@ CONTAINER_NAME="${CONTAINER_NAME:-zad-local-server}"
 PORT="${PORT:-6901}"
 DOCKERFILE="${DOCKERFILE:-Dockerfile.sovereign}"
 REPLICAS="${REPLICAS:-1}"
-RESILIENCE_LABEL_KEY="${RESILIENCE_LABEL_KEY:-zad.resilience}"
-RESILIENCE_LABEL_VALUE="${RESILIENCE_LABEL_VALUE:-true}"
+RESILIENCE_LABEL="${RESILIENCE_LABEL:-zad.resilience=true}"
 
 if ! command -v docker >/dev/null 2>&1; then
   echo "Error: docker is not installed. Install Docker then re-run this script." >&2
@@ -44,7 +43,7 @@ for ((i = 0; i < REPLICAS; i++)); do
 
   docker run -d \
     --name "$name" \
-    --label "$RESILIENCE_LABEL_KEY=$RESILIENCE_LABEL_VALUE" \
+    --label "$RESILIENCE_LABEL" \
     --restart unless-stopped \
     --health-cmd='pgrep -f zed >/dev/null && pgrep -f code-server >/dev/null' \
     --health-interval=30s \

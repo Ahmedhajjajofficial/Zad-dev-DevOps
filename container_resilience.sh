@@ -50,13 +50,6 @@ container_cpu() {
   printf '%.*f\n' 0 "${cpu:-0}"
 }
 
-ensure_labeled_run_args() {
-  if [ "$MANAGE_ALL_CONTAINERS" = "true" ]; then
-    return
-  fi
-  printf -- '--label %s=%s' "$LABEL_KEY" "$LABEL_VALUE"
-}
-
 heal_container() {
   local name="$1"
   local status health
@@ -71,7 +64,7 @@ heal_container() {
 
 scale_if_needed() {
   local name="$1"
-  local cpu count image base replica_name label_args
+  local cpu count image base
 
   cpu="$(container_cpu "$name")"
   if [ "$cpu" -lt "$CPU_THRESHOLD" ]; then
@@ -86,47 +79,42 @@ scale_if_needed() {
   fi
 
   image="$(docker inspect -f '{{.Config.Image}}' "$name")"
-  replica_name="${base}-replica-${count}"
-  label_args="$(ensure_labeled_run_args || true)"
+  local replica_name="${base}-replica-${count}"
 
   echo "[scale] High CPU detected on $name ($cpu%). Starting $replica_name"
-  # shellcheck disable=SC2086
-  docker run -d --name "$replica_name" --restart unless-stopped $label_args "$image" >/dev/null
+  docker run -d \
+    --name "$replica_name" \
+    --label "$LABEL_SELECTOR" \
+    "$image" >/dev/null
 }
 
 migrate_container() {
   local name="$1"
-  local image temp_name container_port host_port candidate_port label_args
+  local image temp_name container_port host_port candidate_port
 
   image="$(docker inspect -f '{{.Config.Image}}' "$name")"
-  container_port="$(docker inspect -f '{{range $p, $_ := .Config.ExposedPorts}}{{printf "%s\n" $p}}{{end}}' "$name" | head -n1)"
-  host_port="$(docker inspect -f '{{range $p, $conf := .NetworkSettings.Ports}}{{if $conf}}{{(index $conf 0).HostPort}}{{"\n"}}{{end}}{{end}}' "$name" | head -n1)"
+  container_port="$(docker inspect -f '{{range $p, $_ := .Config.ExposedPorts}}{{printf "%s" $p}}{{end}}' "$name" | head -n1)"
+  host_port="$(docker inspect -f '{{range $p, $conf := .NetworkSettings.Ports}}{{if $conf}}{{(index $conf 0).HostPort}}{{end}}{{end}}' "$name" | head -n1)"
 
   temp_name="${name}-temp-$(date +%s)"
-  label_args="$(ensure_labeled_run_args || true)"
+  candidate_port=""
 
-  if [ -n "$host_port" ] && [ -n "$container_port" ]; then
+  if [ -n "$host_port" ]; then
     candidate_port="$((host_port + 100))"
     echo "[migrate] Starting temporary container $temp_name on host port $candidate_port"
-    # shellcheck disable=SC2086
-    docker run -d --name "$temp_name" $label_args --restart unless-stopped -p "$candidate_port:${container_port%/*}" "$image" >/dev/null
+    docker run -d --name "$temp_name" --label "$LABEL_SELECTOR" -p "$candidate_port:${container_port%/*}" "$image" >/dev/null
     echo "[migrate] Redirect traffic from :$host_port to :$candidate_port during maintenance."
   else
     echo "[migrate] Starting temporary container $temp_name without published ports"
-    # shellcheck disable=SC2086
-    docker run -d --name "$temp_name" $label_args --restart unless-stopped "$image" >/dev/null
+    docker run -d --name "$temp_name" --label "$LABEL_SELECTOR" "$image" >/dev/null
   fi
 
+  docker update --restart unless-stopped "$temp_name" >/dev/null
   echo "[migrate] Temporary migration ready: $temp_name"
 }
 
 monitor_loop() {
-  if [ "$MANAGE_ALL_CONTAINERS" = "true" ]; then
-    echo "[monitor] Watching ALL containers"
-  else
-    echo "[monitor] Watching containers with label: $LABEL_KEY=$LABEL_VALUE"
-  fi
-
+  echo "[monitor] Watching containers with label: $LABEL_SELECTOR"
   while true; do
     while IFS= read -r c; do
       [ -z "$c" ] && continue
