@@ -1,0 +1,22 @@
+# Local runtime artifacts
+cloudflared.deb
+*.log
+
+# Environment and secret files
+.env
+.env.*
+*.pem
+*.key
+*.crt
+*.p12
+*.kubeconfig
+
+# Editor/OS artifacts
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Python cache (if tooling scripts are added)
+__pycache__/
+*.pyc
