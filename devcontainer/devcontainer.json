@@ -1,0 +1,32 @@
+{
+  "name": "Zad-dev-DevOps-Pro",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "privileged": true,
+  "remoteUser": "root",
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:1": {
+      "configureZshAsDefaultShell": true
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "editor.formatOnSave": true,
+        "vim.useSystemClipboard": true,
+        "terminal.integrated.defaultProfile.linux": "zsh"
+      },
+      "extensions": [
+        "vscodevim.vim",
+        "ms-vscode.cpptools",
+        "ms-azuretools.vscode-docker"
+      ]
+    }
+  },
+  "updateContentCommand": "npm install",
+  "postCreateCommand": "npm run build && chmod +x scripts/*.sh",
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+  ]
+}
